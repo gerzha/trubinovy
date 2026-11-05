@@ -655,12 +655,12 @@ details.room summary:focus-visible{outline:2px solid var(--accent);outline-offse
     const tx = new THREE.CanvasTexture(c); tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.anisotropy = renderer.capabilities.getMaxAnisotropy();
     return tx;
   }
-  const tileTex = canvasTex(1200, (g, N) => {               // porcelain 600 × 1200 under warm marble, laid vertically; 1 px = 1 mm, two tiles per repeat
+  const tileTexOf = c => canvasTex(1200, (g, N) => {        // porcelain 600 × 1200 under warm marble, laid vertically; 1 px = 1 mm, two tiles per repeat
     const r = rng(77);
-    g.fillStyle = '#efe7dc'; g.fillRect(0, 0, N, N);
+    g.fillStyle = c.base; g.fillRect(0, 0, N, N);
     for (let k = 0; k < 18; k++) {
       const x = r() * N, y = r() * N, rad = 120 + r() * 320, gr = g.createRadialGradient(x, y, 0, x, y, rad);
-      gr.addColorStop(0, `rgba(214,198,178,${0.18 + r() * 0.2})`); gr.addColorStop(1, 'rgba(214,198,178,0)');
+      gr.addColorStop(0, `rgba(${c.patch},${0.18 + r() * 0.2})`); gr.addColorStop(1, `rgba(${c.patch},0)`);
       g.fillStyle = gr; g.fillRect(0, 0, N, N);
     }
     for (let t = 0; t < 2; t++) {
@@ -669,7 +669,7 @@ details.room summary:focus-visible{outline:2px solid var(--accent);outline-offse
         let x = t * 600 + r() * 600, y = -40; const pts = [[x, y]];
         while (y < N + 40) { x += (r() - 0.45) * 170; y += 70 + r() * 130; pts.push([x, y]); }
         for (const [w, a] of [[10, 0.04], [2, 0.2], [0.8, 0.32]]) {
-          g.strokeStyle = `rgba(150,126,102,${a * (0.5 + r() * 0.6)})`; g.lineWidth = w * (0.6 + r() * 0.8);
+          g.strokeStyle = `rgba(${c.vein},${a * (0.5 + r() * 0.6)})`; g.lineWidth = w * (0.6 + r() * 0.8);
           g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
           for (let i = 1; i < pts.length; i++) { const [px, py] = pts[i - 1], [qx, qy] = pts[i]; g.quadraticCurveTo(px + (r() - 0.5) * 60, (py + qy) / 2, qx, qy); }
           g.stroke();
@@ -677,11 +677,12 @@ details.room summary:focus-visible{outline:2px solid var(--accent);outline-offse
       }
       g.restore();
     }
-    g.fillStyle = '#d3c7b8'; g.fillRect(0, 0, 2, N); g.fillRect(599, 0, 2, N); g.fillRect(0, 0, N, 2);
+    g.fillStyle = c.joint; g.fillRect(0, 0, 2, N); g.fillRect(599, 0, 2, N); g.fillRect(0, 0, N, 2);
   });
-  const paperTex = canvasTex(1024, (g, N) => {              // grasscloth wallpaper in warm sand; 1024 px = 1 m, a panel seam every metre
+  const tileTex = tileTexOf({ base: '#efe7dc', patch: '214,198,178', vein: '150,126,102', joint: '#d3c7b8' });
+  const paperTexOf = c => canvasTex(1024, (g, N) => {              // grasscloth wallpaper in warm sand; 1024 px = 1 m, a panel seam every metre
     const r = rng(91);
-    g.fillStyle = '#cfc0ac'; g.fillRect(0, 0, N, N);
+    g.fillStyle = c.base; g.fillRect(0, 0, N, N);
     for (let k = 0; k < 10; k++) { g.fillStyle = `rgba(${r() < 0.5 ? '120,100,78' : '240,228,210'},0.04)`; g.fillRect(r() * N, 0, 30 + r() * 120, N); }
     for (let k = 0; k < 1700; k++) {
       const y = r() * N, x = r() * N, len = 30 + r() * 380, h = r() < 0.75 ? 1 : 2;
@@ -690,6 +691,7 @@ details.room summary:focus-visible{outline:2px solid var(--accent);outline-offse
     }
     g.fillStyle = 'rgba(105,88,70,.28)'; g.fillRect(0, 0, 2, N);
   });
+  const paperTex = paperTexOf({ base: '#cfc0ac' });
   const artTex = canvasTex(512, (g, N) => {                 // abstract print in the room's colours
     const r = rng(13);
     g.fillStyle = '#e9e0d3'; g.fillRect(0, 0, N, N);
@@ -728,7 +730,7 @@ details.room summary:focus-visible{outline:2px solid var(--accent);outline-offse
   const P = (F, u, v) => { const c = F.back + F.dir * v; return F.axis === 'x' ? [u, c] : [c, u]; };
   function cyl(r0, r1, h, mat, seg = 24) { const m = new THREE.Mesh(new THREE.CylinderGeometry(M(r0), M(r1), M(h), seg), mat); m.castShadow = m.receiveShadow = true; return m; }
   function put(o, x, y, z, parent = furn) { o.position.set(M(x), M(y), M(z)); parent.add(o); return o; }
-  function vLabel(html, x, y, z) { addLabel(html, new THREE.Vector3(M(x), M(y), M(z)), 'obj', null); labels[labels.length - 1].v = true; }
+  function vLabel(html, x, y, z, owner = null) { addLabel(html, new THREE.Vector3(M(x), M(y), M(z)), 'obj', owner); labels[labels.length - 1].v = true; }
 
   // lower run: plinth recessed 60, carcass, black Gola groove under the worktop and between drawers, 20 mm worktop.
   // units: [[u0, u1, type]], type: drawers | drawers2 | sink | dw | hob | blind | filler.
@@ -751,6 +753,7 @@ details.room summary:focus-visible{outline:2px solid var(--accent);outline-offse
     }
   }
   function lowerFront(F, u0, u1, type, mat) {
+    if (type === 'corner') return;
     const G = 32, g = 22, yb = PL + 3, h = T0 - G - yb;
     const rows = type === 'drawers' || type === 'hob' ? [0.42, 0.33, 0.25] : type === 'drawers2' || type === 'sink' ? [0.55, 0.45] : [1];
     const hh = h - g * (rows.length - 1);
@@ -925,15 +928,15 @@ details.room summary:focus-visible{outline:2px solid var(--accent);outline-offse
     const c = boxMM(xc - w / 2 + f, xc + w / 2 - f, yc - h / 2 + f, yc + h / 2 - f, 34, 36, MF.art, g, false);
     vWallExtras.push(c);
   }
-  function armchairAt(x, z, tx, tz) {                         // tub dining armchair in taupe fabric on black legs, turned toward (tx, tz)
+  function armchairAt(x, z, tx, tz, mat = MF.taupe) {                         // tub dining armchair in taupe fabric on black legs, turned toward (tx, tz)
     const g = new THREE.Group(); put(g, x, 0, z); g.rotation.y = Math.atan2(tx - x, tz - z);
-    boxMM(-250, 250, 420, 490, -220, 250, MF.taupe, g);
-    boxMM(-265, 265, 490, 790, -275, -200, MF.taupe, g);
-    boxMM(-275, -205, 490, 670, -275, 140, MF.taupe, g); boxMM(205, 275, 490, 670, -275, 140, MF.taupe, g);
+    boxMM(-250, 250, 420, 490, -220, 250, mat, g);
+    boxMM(-265, 265, 490, 790, -275, -200, mat, g);
+    boxMM(-275, -205, 490, 670, -275, 140, mat, g); boxMM(205, 275, 490, 670, -275, 140, mat, g);
     [[-200, -190], [200, -190], [-200, 200], [200, 200]].forEach(([a, b]) => put(cyl(12, 9, 420, MF.black, 10), a, 210, b, g));
   }
-  function tableX(x, z, D) {                                  // round walnut table on four splayed black legs (as on the reference)
-    put(new THREE.Mesh(new THREE.CylinderGeometry(M(D / 2), M(D / 2), M(35), 64), MF.walnutTop), x, 737, z).castShadow = true;
+  function tableX(x, z, D, topMat = MF.walnutTop) {                                  // round walnut table on four splayed black legs (as on the reference)
+    put(new THREE.Mesh(new THREE.CylinderGeometry(M(D / 2), M(D / 2), M(35), 64), topMat), x, 737, z).castShadow = true;
     put(cyl(90, 90, 40, MF.black, 24), x, 700, z);
     const up = new THREE.Vector3(0, 1, 0);
     for (let k = 0; k < 4; k++) {
@@ -950,54 +953,94 @@ details.room summary:focus-visible{outline:2px solid var(--accent);outline-offse
 
   const ORBIT0 = { pos: [5.6, 5.3, 7.7], target: [1.95, 0.7, 1.95], fov: 40 }, WINDOW0 = { pos: [0.45, 1.55, 1.9], target: [4.0, 1.0, 3.0], fov: 64 };
   const WNORTH0 = { pos: [2.0, 1.45, 3.95], target: [2.0, 1.3, 0], fov: 62 };
-  const TOPS = {                                              // warm worktop options (Sasha: «другой цвет, более тёплый»)
-    mocha: { name: 'мокко', mat: std(0x6b5b4e, 0.45), sw: '#6b5b4e' },
-    stone: { name: 'бежевый камень', mat: std(0xcdbea9, 0.5), sw: '#cdbea9' },
-    oak:   { name: 'дуб', mat: wood('#a98763', 41), sw: '#a98763' },
+  const TOPS = {}; let curTop = '';                           // (worktop picker retired: each colour scheme carries its own worktop)
+  const tileMat = c => { const m = std(0xffffff, 0.22, { map: tileTexOf(c) }); m.userData.su = m.userData.sv = 1200; return m; };
+  const paperMat = base => { const m = std(0xffffff, 0.95, { map: paperTexOf({ base }) }); m.userData.su = m.userData.sv = 1000; return m; };
+  function hhCabinet(x0, x1, mat) {                           // shallow full-height household cabinet beside the corridor door: vacuum, mop, ironing board
+    const F = { axis: 'x', back: RZ, dir: -1 }, D = 400, xm = (x0 + x1) / 2;
+    L(F, x0, x1, 0, PL, 0, D - 60, MF.plinth);
+    L(F, x0, x1, PL, H, 0, D - 22, mat);
+    L(F, x0, x1, PL, H - 3, D - 22, D - 20, MF.seam, furn, false);
+    [[x0, xm], [xm, x1]].forEach(([a, b]) => { L(F, a + 1.5, b - 1.5, PL + 1.5, 2178.5, D - 20, D, mat); L(F, a + 1.5, b - 1.5, 2181.5, H - 1.5, D - 20, D, mat); });
+    L(F, x0, x0 + 18, 0, H, 0, D, mat); L(F, x1 - 18, x1, 0, H, 0, D, mat);
+  }
+  function coffeeCorner() {                                   // the corner of the worktop at work: coffee machine and kettle
+    boxMM(40, 300, T1, T1 + 370, 3820, 4110, MF.tvBody, furn);
+    boxMM(300, 304, T1 + 210, T1 + 330, 3870, 4060, MF.tvScreen, furn, false);
+    boxMM(300, 330, T1 + 150, T1 + 190, 3940, 3990, MF.steel, furn, false);
+    boxMM(300, 360, T1 + 30, T1 + 40, 3900, 4030, MF.steel, furn, false);
+    put(cyl(72, 84, 230, MF.steel, 24), 820, T1 + 115, 3960);
+    put(cyl(20, 20, 30, MF.black, 12), 820, T1 + 245, 3960);
+  }
+  const TCX = 2280, TCZ = 1730;                               // round table centre
+  const COMMON = {
+    points: [
+      'Пенал стоит у стены к комнате: холодильник в нише (его видно), духовка с СВЧ на уровне глаз, витрина с ящиками внизу',
+      'Мёртвых углов нет: в углу у окна карусель LeMans, на столешнице над ней кофемашина и чайник',
+      'Рядом с холодильником 60 см столешницы: продукты из холодильника сразу ставятся на неё',
+      'У двери в коридор хозяйственный шкаф глубиной 40 см до потолка: пылесос, швабра, гладильная доска',
+      'Вдоль окна идут варочная панель, 70 см столешницы для готовки, мойка под окном (под ней вёдра для сортировки) и посудомойка',
+      'Круглый стол Ø1000 с 4 креслами под вашим светильником, телевизор 55″ на стене к коридору напротив стола',
+      'Проходы: от кресел до рабочего ряда около 80 см, до пенала около 1 м. Вдоль стены с кладовкой идёт путь из кладовки к плите и мойке, вдоль стены с телевизором путь из кладовки в коридор',
+      'Над плитой и вокруг окна плитка, на стенах с телевизором и со скрытой дверью обои, на окне римская штора, двери серые. Верхних шкафов и вытяжки нет'],
+    items: [['Ряд вдоль окна', '3570 × 600'], ['Угол у окна', '1220 × 600, LeMans'], ['Пенал', '1780 × 600 × 2700'], ['Хоз. шкаф', '960 × 400 × 2700'], ['Стол круглый', 'Ø1000, 4 кресла'], ['Телевизор', '55″']],
   };
-  let curTop = 'mocha';
-  const TCX = 2280, TCZ = 1850;                               // round table centre
+  const PALETTES = [
+    { name: 'Орех и кашемир', lede: 'Как на последнем фото из Pinterest: пенал из ореха, светлые фасады цвета кашемир, тёплая столешница мокко, плитка под тёплый мрамор, песочные обои.',
+      sw: [['пенал: орех', '#5b4232'], ['фасады: кашемир', '#d9cdbd'], ['столешница: мокко', '#6b5b4e'], ['плитка: тёплый мрамор', '#eadfd0'], ['обои: песок', '#cfc0ac'], ['кресла: тауп', '#857767']],
+      mk: () => ({ tall: MF.walnut, low: MF.cashmere, top: std(0x6b5b4e, 0.45), chair: MF.taupe, table: MF.walnutTop,
+        tile: tileMat({ base: '#efe7dc', patch: '214,198,178', vein: '150,126,102', joint: '#d3c7b8' }), paper: paperMat('#cfc0ac') }) },
+    { name: 'Дуб и графит', lede: 'Ближе всего к фото с дубом: нижние фасады из дуба, пенал матовый графит, столешница светлый бежевый камень вместо чёрной, плитка под светлый мрамор, кресла коньячного цвета.',
+      sw: [['фасады: дуб', '#ad8a63'], ['пенал: графит', '#3a3b3f'], ['столешница: бежевый камень', '#cdbea9'], ['плитка: светлый мрамор', '#efebe5'], ['обои: тёплый серый', '#c9beb0'], ['кресла: коньяк', '#9a6a45']],
+      mk: () => ({ tall: std(0x3a3b3f, 0.75), low: MF.oak, top: std(0xcdbea9, 0.5), chair: std(0x9a6a45, 0.8), table: MF.tableTop,
+        tile: tileMat({ base: '#f2eee8', patch: '205,200,192', vein: '120,116,110', joint: '#d6d0c8' }), paper: paperMat('#c9beb0') }) },
+    { name: 'Светлый кашемир', lede: 'Самая светлая гамма: пенал и фасады в двух оттенках кашемира, столешница из дуба, плитка под бежевый мрамор, светлые льняные обои, кресла молочного букле.',
+      sw: [['пенал: кашемир темнее', '#d3c6b5'], ['фасады: кашемир', '#e3dace'], ['столешница: дуб', '#a98763'], ['плитка: бежевый мрамор', '#efe6d9'], ['обои: лён', '#dccfbe'], ['кресла: букле', '#e9e2d7']],
+      mk: () => ({ tall: std(0xd3c6b5, 0.82), low: std(0xe3dace, 0.82), top: wood('#a98763', 41), chair: MF.boucle, table: MF.tableTop,
+        tile: tileMat({ base: '#f1eadf', patch: '222,208,190', vein: '170,150,128', joint: '#dbd0c2' }), paper: paperMat('#dccfbe') }) },
+    { name: 'Мокко-мусс', lede: 'Цвет 2025 года по Pantone: нижние фасады в тёплом мокко, светлый пенал, столешница под травертин, обои карамельного оттенка, стол из ореха и кресла молочного букле.',
+      sw: [['фасады: мокко-мусс', '#a47864'], ['пенал: кашемир', '#d8ccbc'], ['столешница: травертин', '#dccdb6'], ['плитка: кремовый мрамор', '#efe4d6'], ['обои: карамель', '#cdb59d'], ['кресла: букле', '#e9e2d7']],
+      mk: () => ({ tall: std(0xd8ccbc, 0.82), low: std(0xa47864, 0.8), top: std(0xdccdb6, 0.5), chair: MF.boucle, table: MF.walnutTop,
+        tile: tileMat({ base: '#f0e6d8', patch: '220,196,172', vein: '168,130,104', joint: '#d9cab8' }), paper: paperMat('#cdb59d') }) },
+    { name: 'Олива и дуб', lede: 'Тёплая зелёная гамма: нижние фасады оливкового цвета, пенал из дуба, столешница бежевый камень, кремовая плитка, кресла цвета карамели.',
+      sw: [['фасады: олива', '#6e7257'], ['пенал: дуб', '#ad8a63'], ['столешница: бежевый камень', '#d3c5af'], ['плитка: кремовый мрамор', '#eee8dc'], ['обои: тёплый песок', '#cfc3ae'], ['кресла: карамель', '#a77a52']],
+      mk: () => ({ tall: MF.oak, low: std(0x6e7257, 0.8), top: std(0xd3c5af, 0.5), chair: std(0xa77a52, 0.85), table: MF.tableTop,
+        tile: tileMat({ base: '#efe9dd', patch: '214,206,186', vein: '150,140,118', joint: '#d6cebf' }), paper: paperMat('#cfc3ae') }) },
+  ];
+  function buildKitchen(p) {
+    const m = p.m || (p.m = p.mk());
+    MF.top = m.top;
+    lowerRun({ axis: 'z', back: 0, dir: 1, front: m.low,
+      units: [[0, 300, 'drawers'], [300, 1100, 'hob'], [1100, 1785, 'drawers'], [1785, 2585, 'sink'], [2585, 3185, 'dw'], [3185, 3570, 'drawers']] });
+    lowerRun({ axis: 'x', back: RZ, dir: -1, front: m.low, units: [[0, 620, 'corner'], [620, 1220, 'lemans']] });
+    tallRun({ axis: 'x', back: RZ, dir: -1, front: m.tall, units: [[1220, 1860, 'fridgeFS'], [1860, 2460, 'oven'], [2460, 3000, 'vitrine']] });
+    hhCabinet(3000, 3960, m.tall);
+    coffeeCorner();
+    finishSlab('west', 0, WIN.z0, T1, H - 60, m.tile, 8); finishSlab('west', WIN.z1, RZ, T1, H - 60, m.tile, 8); finishSlab('west', WIN.z0, WIN.z1, WIN.y1, H - 60, m.tile, 8);
+    finishSlab('north', 0, 620, T1, H - 60, m.tile, 8); finishSlab('south', 0, 1220, T1, H - 60, m.tile, 8);
+    finishSlab('north', 620, DN.x0, 60, H - 60, m.paper); finishSlab('north', DN.x1, RX, 60, H - 60, m.paper); finishSlab('north', DN.x0, DN.x1, DN.top, H - 60, m.paper);
+    finishSlab('east', 0, DE.z0 - 70, 60, H - 60, m.paper); finishSlab('east', DE.z1 + 70, RZ, 60, H - 60, m.paper); finishSlab('east', DE.z0 - 70, DE.z1 + 70, DE.top + 70, H - 60, m.paper);
+    leafFinish(m.paper);
+    romanBlind();
+    tableX(TCX, TCZ, 1000, m.table);
+    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => armchairAt(TCX + a * 495, TCZ + b * 495, TCX, TCZ, m.chair));
+    pendantAt(TCX, TCZ, 'x', 1500);
+    tvEast(TCZ, 1300);
+    artNorth(TCX, 1650, 700, 900);
+    vLabel('Пенал<small>холодильник · духовка + СВЧ · витрина</small>', 2110, 2350, 3870);
+    vLabel('Холодильник<small>отдельностоящий, в нише</small>', 1540, 1250, 3560);
+    vLabel('Угол: карусель LeMans<small>сверху кофемашина и чайник</small>', 420, 1500, 3870);
+    vLabel('Хоз. шкаф 40 см<small>пылесос · швабра · гладильная доска</small>', 3480, 2050, 3770);
+    vLabel('Плита · мойка у окна · посудомойка', 300, 1150, 1300);
+    vLabel('Круглый стол Ø1000<small>4 кресла, ваш светильник</small>', TCX, 1000, TCZ);
+    vLabel('Телевизор 55″', RX - 40, 1760, TCZ, wallById.east);
+    vLabel('Скрытая дверь в кладовку<small>в обоях</small>', (DN.x0 + DN.x1) / 2, 2300, 40, wallById.north);
+  }
   const VARIANTS = [
     { name: 'Пустая комната', title: 'Кухня без мебели', lede: 'Комната по плану этажа: стены, тройное окно, две двери и плитка на полу, как на фото.', build() {} },
-    { name: 'Вариант по замечаниям', title: 'Пенал у стены к комнате, круглый стол', tops: true,
-      orbit: { pos: [6.2, 5.3, -2.4], target: [1.8, 0.6, 2.4], fov: 40 },
-      views: { wnorth: { pos: [2.0, 1.45, 3.4], target: [2.0, 1.3, 0], fov: 68 } },
-      lede: 'Переделано по вашим замечаниям. Пенал стоит у стены к комнате, работа идёт вдоль окна, в центре круглый стол, телевизор висит на стене к коридору. Дизайн взят с последнего фото из Pinterest: орех, кашемир, плитка под тёплый мрамор.',
-      points: [
-        'Пенал стоит у стены к комнате: холодильник, духовка с СВЧ на уровне глаз, кладовая и стеклянная витрина с подсветкой',
-        'Холодильник отдельностоящий, стоит в нише пенала (подойдёт и ваш LG), над ним шкаф до потолка',
-        'Вдоль окна идёт рабочий ряд: варочная панель, 70 см столешницы, мойка под окном, посудомойка. Холодильник рядом, за углом',
-        'Круглый стол Ø1000 с 4 креслами под вашим светильником. Между креслами и рабочим рядом около 80 см',
-        'Телевизор 55″ висит на стене к коридору, его видно из-за стола',
-        'Над плитой и вокруг окна до потолка крупная плитка под тёплый мрамор. На стенах с телевизором и со скрытой дверью обои под рогожку, остальное покрашено',
-        'На окне льняная римская штора с тёмной каймой: она не мешает плите и мойке',
-        'Дверь в кладовку скрытая, оклеена теми же обоями. Дверь в коридор серая',
-        'Вытяжки над плитой нет, её заменяет варочная панель со встроенной вытяжкой. Верхних шкафов нет'],
-      items: [['Ряд вдоль окна', '4170 × 600'], ['Пенал', '2380 × 600 × 2700'], ['Холодильник', '600 × 650 × 1860'], ['Стол круглый', 'Ø1000, 4 кресла'], ['Телевизор', '55″']],
-      pal: () => [['орех', '#5b4232'], ['кашемир', SW.cashmere], ['столешница: ' + TOPS[curTop].name, TOPS[curTop].sw], ['плитка под мрамор', '#eadfd0'], ['обои под рогожку', '#cbb9a1'], ['двери', '#8f8b86']],
-      build() {
-        lowerRun({ axis: 'z', back: 0, dir: 1, front: MF.cashmere,
-          units: [[0, 300, 'drawers'], [300, 1100, 'hob'], [1100, 1785, 'drawers'], [1785, 2585, 'sink'], [2585, 3185, 'dw'], [3185, 3570, 'drawers'], [3570, RZ, 'blind']] });
-        tallRun({ axis: 'x', back: RZ, dir: -1, front: MF.walnut, units: [[620, 1260, 'fridgeFS'], [1260, 1860, 'oven'], [1860, 2420, 'pantry'], [2420, 3000, 'vitrine']] });
-        // walls: tile around the window and over the hob, wallpaper on the TV wall and the wall with the hidden door, paint elsewhere
-        finishSlab('west', 0, WIN.z0, T1, H - 60, MF.tile, 8); finishSlab('west', WIN.z1, RZ, T1, H - 60, MF.tile, 8); finishSlab('west', WIN.z0, WIN.z1, WIN.y1, H - 60, MF.tile, 8);
-        finishSlab('north', 0, 620, T1, H - 60, MF.tile, 8); finishSlab('south', 0, 620, T1, H - 60, MF.tile, 8);
-        finishSlab('north', 620, DN.x0, 60, H - 60, MF.paper); finishSlab('north', DN.x1, RX, 60, H - 60, MF.paper); finishSlab('north', DN.x0, DN.x1, DN.top, H - 60, MF.paper);
-        finishSlab('east', 0, DE.z0 - 70, 60, H - 60, MF.paper); finishSlab('east', DE.z1 + 70, RZ, 60, H - 60, MF.paper); finishSlab('east', DE.z0 - 70, DE.z1 + 70, DE.top + 70, H - 60, MF.paper);
-        leafFinish(MF.paper);
-        romanBlind();
-        tableX(TCX, TCZ, 1000);
-        [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => armchairAt(TCX + a * 495, TCZ + b * 495, TCX, TCZ));
-        pendantAt(TCX, TCZ, 'x', 1500);
-        tvEast(TCZ, 1300);
-        artNorth(1700, 1650, 700, 900);
-        vLabel('Пенал из ореха<small>холодильник · духовка + СВЧ · кладовая · витрина</small>', 1810, 2350, 3870);
-        vLabel('Холодильник<small>отдельностоящий, в нише</small>', 940, 1250, 3560);
-        vLabel('Плита · мойка у окна · посудомойка<small>над плитой плитка под мрамор</small>', 300, 1150, 1300);
-        vLabel('Круглый стол Ø1000<small>4 кресла, ваш светильник</small>', TCX, 1000, TCZ);
-        vLabel('Телевизор 55″', RX - 40, 1760, TCZ);
-        vLabel('Скрытая дверь в кладовку<small>в обоях, открывается в кухню</small>', (DN.x0 + DN.x1) / 2, 2300, 40);
-      } },
+    ...PALETTES.map((p, i) => ({ name: p.name, title: `${i + 1} · ${p.name}`, lede: p.lede, points: COMMON.points, items: COMMON.items, pal: p.sw,
+      orbit: { pos: [6.2, 5.3, -2.4], target: [1.8, 0.6, 2.4], fov: 40 }, views: { wnorth: { pos: [2.0, 1.45, 3.3], target: [2.0, 1.3, 0], fov: 68 } },
+      build() { buildKitchen(p); } })),
   ];
 
   const vTitle = document.getElementById('v-title'), vLede = document.getElementById('v-lede'), vBody = document.getElementById('v-body');
@@ -1021,7 +1064,6 @@ details.room summary:focus-visible{outline:2px solid var(--accent);outline-offse
     clearVariant();
     curVariant = n;
     const V = VARIANTS[n];
-    MF.top = TOPS[curTop].mat;
     V.build();
     renderPanel(V);
     Object.assign(VIEWS.orbit, V.orbit || ORBIT0);
@@ -1044,7 +1086,7 @@ details.room summary:focus-visible{outline:2px solid var(--accent);outline-offse
         box.setFromObject(o);
         const at = `x ${Math.round(box.min.x * 1000)}..${Math.round(box.max.x * 1000)}, z ${Math.round(box.min.z * 1000)}..${Math.round(box.max.z * 1000)}`;
         if (hit(box, DN.x0, DN.x1, 0, 850, 2100)) probs.add('дверь в котельную: ' + at);
-        if (hit(box, 3000, RX, DE.z0 - 50, DE.z1 + 50)) probs.add('дверь в коридор: ' + at);
+        if (hit(box, 3000, RX, DE.z0, DE.z1)) probs.add('дверь в коридор: ' + at);
         if (box.min.x < -0.002 || box.max.x > M(RX) + 0.002 || box.min.z < -0.002 || box.max.z > M(RZ) + 0.002) probs.add('за стеной: ' + at);
         if (!noWin && box.max.x < 0.7 && box.max.y > M(WIN.y0 + 8) && box.min.z < M(WIN.z1) && box.max.z > M(WIN.z0)) probs.add('закрывает окно: ' + at);
       });
