@@ -69,6 +69,18 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
 .spec dd.guess{color:var(--muted)}
 .note{margin:10px 0 0;font-size:13px;color:var(--muted)}
 .source{margin:22px 0 0;font-size:12px;color:var(--muted)}
+.vsel{display:flex;align-items:center;gap:8px;pointer-events:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:3px 3px 3px 12px}
+.vsel label{font:500 13px/1 var(--f-body);color:var(--muted)}
+.vsel select{appearance:none;-webkit-appearance:none;border:0;border-radius:6px;background-color:var(--bg);color:var(--ink);font:600 13px/1 var(--f-body);padding:8px 30px 8px 10px;cursor:pointer;max-width:280px;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 15px) 52%,calc(100% - 10px) 52%;background-size:5px 5px;background-repeat:no-repeat}
+.vsel select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.points{margin:8px 0 0;padding-left:18px}
+.points li{margin:5px 0;font-size:13.5px}
+.pal{display:flex;flex-wrap:wrap;gap:6px 14px;margin:10px 0 0}
+.pal span{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
+.pal i{width:16px;height:16px;border-radius:4px;border:1px solid var(--line);display:inline-block}
+details.room{margin-top:26px;border-top:1px solid var(--line);padding-top:4px}
+details.room summary{cursor:pointer;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:10px 0}
+details.room summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media (max-width:820px){
   html,body{height:auto}
   .app{grid-template-columns:1fr;height:auto}
@@ -79,7 +91,9 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
   .hint{display:none}
   /* phones: all view/layer buttons in one row that scrolls sideways; labels smaller */
   .stage{height:72svh;min-height:380px}
-  .toolbar{top:8px;left:max(8px,env(safe-area-inset-left,0px));right:max(8px,env(safe-area-inset-right,0px));gap:6px}
+  .toolbar{top:8px;left:max(8px,env(safe-area-inset-left,0px));right:max(8px,env(safe-area-inset-right,0px));gap:6px;flex-direction:column;flex-wrap:nowrap}
+  .vsel{width:100%;box-sizing:border-box}
+  .vsel select{flex:1;max-width:none}
   .tools{display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;pointer-events:auto;touch-action:pan-x;scrollbar-width:none;-webkit-mask-image:linear-gradient(to right,#000 88%,transparent);mask-image:linear-gradient(to right,#000 88%,transparent);padding-right:24px}
   .tools::-webkit-scrollbar{display:none}
   .seg{flex:none;flex-wrap:nowrap}
@@ -92,6 +106,7 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
   <section class="stage" id="stage" aria-label="3D-модель кухни">
     <div class="labels" id="labels"></div>
     <div class="toolbar">
+      <div class="vsel"><label for="vsel">Вариант</label><select id="vsel"></select></div>
       <div class="tools">
       <div class="seg" role="group" aria-label="Вид">
         <button type="button" data-view="orbit" aria-pressed="true">Обзор</button>
@@ -104,8 +119,8 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
         <button type="button" data-view="wsouth" aria-pressed="false">Стена к комнате</button>
       </div>
       <div class="seg" role="group" aria-label="Слои">
-        <button type="button" id="t-dims" aria-pressed="true">Размеры</button>
-        <button type="button" id="t-grid" aria-pressed="true">Сетка 50 см</button>
+        <button type="button" id="t-dims" aria-pressed="false">Размеры</button>
+        <button type="button" id="t-grid" aria-pressed="false">Сетка 50 см</button>
         <button type="button" id="t-clean" aria-pressed="false" title="Скрыть все размеры, подписи, сетку и дуги дверей">Без подписей</button>
       </div>
       <div class="seg dim" role="group" aria-label="Свет">
@@ -123,9 +138,17 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
   </section>
 
   <aside class="panel">
-    <p class="eyebrow">Трубиновы · план этажа</p>
-    <h1>Кухня</h1>
-    <p class="lede">Пустая комната по плану этажа: стены, окно, две двери и пол как на фото. Мебель расставим следующим шагом.</p>
+    <p class="eyebrow">Трубиновы · кухня 16,7 м²</p>
+    <h1 id="v-title">Кухня</h1>
+    <p class="lede" id="v-lede"></p>
+    <div id="v-body"></div>
+
+    <h2>Во всех вариантах</h2>
+    <p class="note">Верхних шкафов нет. Технику ставим в пенал до потолка. Вытяжки над плитой нет: её заменяет варочная панель со встроенной вытяжкой, которая тянет пар вниз. Фасады без ручек, с чёрным профилем Gola, столешница чёрная, 20 мм. Над столом или островом висит ваш светильник с тремя стеклянными плафонами.</p>
+    <p class="note">Если под окном стоит батарея, то для мойки у окна (варианты 1, 4 и 5) её переносят или делают решётку в столешнице. Смеситель у окна нужен невысокий, иначе не откроется створка.</p>
+
+    <details class="room">
+      <summary>Размеры комнаты</summary>
 
     <div class="figures">
       <div><span class="num">16,7</span><span class="unit">м²</span><span class="cap">площадь пола</span></div>
@@ -144,10 +167,10 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
       <div><dt>Проём, ширина</dt><dd class="guess">≈ 1610</dd></div>
       <div><dt>От стены к котельной</dt><dd class="guess">≈ 1380</dd></div>
       <div><dt>От стены к комнате</dt><dd class="guess">≈ 1180</dd></div>
-      <div><dt>Подоконник от пола</dt><dd class="guess">800?</dd></div>
-      <div><dt>Высота проёма</dt><dd class="guess">1500?</dd></div>
+      <div><dt>Подоконник от пола</dt><dd class="guess">900?</dd></div>
+      <div><dt>Высота проёма</dt><dd class="guess">1400?</dd></div>
     </dl>
-    <p class="note">Окно одно, в наружной стене. На плане его размеры не подписаны, поэтому ширина и положение сняты по масштабу (±50 мм). Высоту окна и подоконника план не даёт, и их взяли типовыми.</p>
+    <p class="note">Окно тройное, в наружной стене. На плане его размеры не подписаны, поэтому ширина и положение сняты по масштабу (±50 мм). Высоту план не даёт. По фото подоконник примерно на уровне столешницы, поэтому взят 900.</p>
 
     <h2>Двери, мм</h2>
     <dl class="spec">
@@ -165,7 +188,7 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
       <div><dt>Вставки с орнаментом</dt><dd class="guess">80 × 80?</dd></div>
       <div><dt>Раскладка</dt><dd>«вертушка»</dd></div>
     </dl>
-    <p class="note">Рисунок взят с фото: крупная плитка, у каждой угла тёмная вставка, швы сдвигаются на ширину вставки. По фото видно соотношение размеров примерно 5 : 1, но не реальный размер. Поэтому плитка взята 40 × 40 см, а вставка 8 × 8 см.</p>
+    <p class="note">Рисунок взят с фото: крупная плитка, у каждой угла тёмная вставка, швы сдвигаются на ширину вставки. По фото видно соотношение размеров примерно 5 : 1, но не реальный размер. Поэтому плитка взята 40 × 40 см, а вставка 8 × 8 см. Уложена по диагонали к стенам, как на фото.</p>
 
     <h2>Стены, мм</h2>
     <dl class="spec">
@@ -177,6 +200,7 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
     <p class="note">Первое число — длина стены по плану, второе — её толщина. Толщины выведены из привязок к осям, на работу с кухней они не влияют.</p>
 
     <p class="source">Размеры взяты с листа «План этажа» (АР). Серым отмечено то, что снято по масштабу или принято: это нужно перемерить на месте.</p>
+    </details>
   </aside>
 </div>
 
@@ -195,22 +219,25 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
   //      x from the outer wall with the window (0) east to the corridor wall (4000); z from the boiler-room wall (0) south to the living-room wall (4170); y up.
   const M = v => v / 1000;
   const RX = 4000, RZ = 4170, H = 2700, STUB = 60;
-  const WIN = { z0: 1380, z1: 2990, y0: 800, y1: 2300 };   // window opening: measured off the drawing (not dimensioned), height assumed
+  const WIN = { z0: 1380, z1: 2990, y0: 900, y1: 2300 };   // window opening: measured off the drawing (not dimensioned); sill ≈ worktop level on the photo, height assumed
   const DN = { x0: 2960, x1: 3870, top: 2080 };              // door to the boiler room: 910 opening, dimensioned on the drawing
   const DE = { z0: 2900, z1: 3770, top: 2080 };              // door to the corridor: ≈870 opening, measured off the drawing
   const tok = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const rng = key => { let s = 1 + key * 7919; const r = () => (s = (s * 16807) % 2147483647) / 2147483647; r(); r(); r(); return r; };
 
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.autoUpdate = false;   // static scene: shadows are redrawn only when something moves (shadowDirty)
+  let shadowDirty = true;
   stage.prepend(renderer.domElement);
 
   const scene = new THREE.Scene();
   const persp = new THREE.PerspectiveCamera(40, 1, 0.05, 100);
   const ortho = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
   let cam = persp, controls = null, tween = null;
-  let showDims = true;
+  let showDims = false;
 
   // ---- lights: daylight from the west through the window, a soft key light from the room side so the walls read
   scene.add(new THREE.HemisphereLight(0xffffff, 0xcbbca6, 0.85));
@@ -229,12 +256,13 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
   const ceilShadow = new THREE.Mesh(new THREE.BoxGeometry(M(RX + 800), 0.02, M(RZ + 800)), new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }));
   ceilShadow.position.set(M(RX / 2), M(H) + 0.01, M(RZ / 2)); ceilShadow.castShadow = true;
   scene.add(ceilShadow);
-  const fill = new THREE.PointLight(0xfff1dc, 0.25, 7, 2);
-  fill.position.set(M(RX / 2), M(H - 150), M(RZ / 2));
+  const fill = new THREE.PointLight(0xfff1dc, 0.32, 8, 2);
+  fill.position.set(M(RX / 2), M(H - 250), M(RZ / 2));
+  fill.castShadow = true; fill.shadow.mapSize.set(1024, 1024); fill.shadow.bias = -0.002; fill.shadow.camera.near = 0.1;
   scene.add(fill);
 
   // ---- materials
-  const plaster  = new THREE.MeshStandardMaterial({ color: 0xe4e0da, roughness: 0.95 });
+  const plaster  = new THREE.MeshStandardMaterial({ color: 0xdcd3c8, roughness: 0.95 });   // warm greige, as on the photos
   const capMat   = new THREE.MeshStandardMaterial({ color: 0x353c46, roughness: 0.9 });
   const frameMat = new THREE.MeshStandardMaterial({ color: 0xf2f1ee, roughness: 0.5 });
   const glassMat = new THREE.MeshStandardMaterial({ color: 0xbcd6ea, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.3, depthWrite: false });
@@ -249,8 +277,17 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
   const swingLine = new THREE.LineDashedMaterial({ color: 0x2a63a4, dashSize: 0.05, gapSize: 0.035 });
   const capped = [plaster, plaster, capMat, plaster, plaster, plaster];
 
+  // textured materials with userData.wuv get world-scaled UVs: the texture repeats every `wuv` mm on every face, whatever the box size
+  let uvSeed = 0;
+  function worldUV(geo, w, h, d, S) {
+    const uv = geo.attributes.uv, du = [d, d, w, w, w, w], dv = [h, h, d, d, h, h];
+    const o1 = (++uvSeed * 0.6180339) % 1, o2 = (uvSeed * 0.4142136) % 1;
+    for (let f = 0; f < 6; f++) for (let k = 0; k < 4; k++) { const i = f * 4 + k; uv.setXY(i, uv.getX(i) * du[f] / S + o1, uv.getY(i) * dv[f] / S + o2); }
+  }
   function boxMM(x0, x1, y0, y1, z0, z1, mat, parent, cast = true) {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(M(x1 - x0), M(y1 - y0), M(z1 - z0)), mat);
+    const geo = new THREE.BoxGeometry(M(x1 - x0), M(y1 - y0), M(z1 - z0));
+    if (!Array.isArray(mat) && mat.userData.wuv) worldUV(geo, x1 - x0, y1 - y0, z1 - z0, mat.userData.wuv);
+    const m = new THREE.Mesh(geo, mat);
     m.position.set(M(x0 + x1) / 2, M(y0 + y1) / 2, M(z0 + z1) / 2);
     m.castShadow = cast; m.receiveShadow = true;
     parent.add(m);
@@ -334,6 +371,7 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
     const tx = new THREE.CanvasTexture(c);
     tx.wrapS = tx.wrapT = THREE.RepeatWrapping;
     tx.repeat.set(1 / M(P), 1 / M(P));
+    tx.rotation = Math.PI / 4;   // laid diagonally to the walls (photo by the wall with the skirting)
     tx.anisotropy = renderer.capabilities.getMaxAnisotropy();
     return tx;
   }
@@ -391,23 +429,36 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
     wallById[w.id] = w;
   });
 
-  // ---- window: white PVC, two sashes on a centre mullion, set in the outer half of the wall; inner sill board and outer drip
+  // ---- white ceiling cornice and brown skirting (photos); they hide with their wall in the cut-away views
+  (function trims() {
+    const cor = new THREE.MeshStandardMaterial({ color: 0xf4f2ee, roughness: 0.6 }), sk = new THREE.MeshStandardMaterial({ color: 0x5b4636, roughness: 0.6 });
+    const W = wallById;
+    boxMM(0, RX, H - 60, H, 0, 60, cor, W.north.full, false);       boxMM(0, RX, H - 60, H, RZ - 60, RZ, cor, W.south.full, false);
+    boxMM(0, 60, H - 60, H, 0, RZ, cor, W.west.full, false);        boxMM(RX - 60, RX, H - 60, H, 0, RZ, cor, W.east.full, false);
+    boxMM(0, DN.x0 - 70, 0, 60, 0, 12, sk, W.north.full, false);    boxMM(DN.x1 + 70, RX, 0, 60, 0, 12, sk, W.north.full, false);
+    boxMM(0, RX, 0, 60, RZ - 12, RZ, sk, W.south.full, false);       boxMM(0, 12, 0, 60, 0, RZ, sk, W.west.full, false);
+    boxMM(RX - 12, RX, 0, 60, 0, DE.z0 - 70, sk, W.east.full, false); boxMM(RX - 12, RX, 0, 60, DE.z1 + 70, RZ, sk, W.east.full, false);
+  })();
+
+  // ---- window: white PVC, three sashes (client's photo) with roller-blind cassettes; inner sill board just under the worktop level, outer drip
   (function buildWindow(g) {
-    const { z0, z1, y0, y1 } = WIN, f = 70, xa = -200, xb = -130, zm = (z0 + z1) / 2;
+    const { z0, z1, y0, y1 } = WIN, f = 65, xa = -200, xb = -130, w3 = (z1 - z0) / 3;
+    const blind = new THREE.MeshStandardMaterial({ color: 0x6b5546, roughness: 0.8 });
     boxMM(xa, xb, y0, y0 + f, z0, z1, frameMat, g);
     boxMM(xa, xb, y1 - f, y1, z0, z1, frameMat, g);
     boxMM(xa, xb, y0, y1, z0, z0 + f, frameMat, g);
     boxMM(xa, xb, y0, y1, z1 - f, z1, frameMat, g);
-    boxMM(xa, xb, y0, y1, zm - 40, zm + 40, frameMat, g);
+    [z0 + w3, z0 + 2 * w3].forEach(zm => boxMM(xa, xb, y0, y1, zm - 40, zm + 40, frameMat, g));
     const gx = (xa + xb) / 2;
-    [[z0 + f, zm - 40], [zm + 40, z1 - f]].forEach(([za, zb]) => boxMM(gx - 3, gx + 3, y0 + f, y1 - f, za, zb, glassMat, g, false));
-    // handles on both sashes, on the mullion side
-    [zm - 75, zm + 75].forEach(z => {
+    const panes = [[z0 + f, z0 + w3 - 40], [z0 + w3 + 40, z0 + 2 * w3 - 40], [z0 + 2 * w3 + 40, z1 - f]];
+    panes.forEach(([za, zb]) => boxMM(gx - 3, gx + 3, y0 + f, y1 - f, za, zb, glassMat, g, false));
+    [z0 + w3 - 75, z0 + 2 * w3 + 75].forEach(z => {
       boxMM(xb, xb + 12, 1530, 1590, z - 12, z + 12, frameMat, g, false);
       boxMM(xb + 12, xb + 26, 1420, 1580, z - 8, z + 8, frameMat, g, false);
     });
-    boxMM(-130, 40, 770, 800, z0 - 30, z1 + 30, whiteMat, g);          // inner sill board, 40 proud of the wall
-    boxMM(-350, -200, 770, 790, z0 - 20, z1 + 20, greyMat, g);         // outer drip
+    panes.forEach(([za, zb]) => boxMM(xb, xb + 45, y1 - f - 70, y1 - f, za - 20, zb + 20, blind, g, false));
+    boxMM(-130, 20, y0 - 31, y0 - 1, z0 - 30, z1 + 30, whiteMat, g);
+    boxMM(-350, -200, y0 - 30, y0 - 10, z0 - 20, z1 + 20, greyMat, g);
   })(wallById.west.full);
 
   // ---- doors: flat light leaves in a box frame, flat architraves on the kitchen side, black levers
@@ -482,17 +533,18 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
   for (let z = 500; z < RZ; z += 500) gridPts.push(0, 0.003, M(z), M(RX), 0.003, M(z));
   const grid = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(gridPts, 3)), gridMat);
   scene.add(grid);
+  grid.visible = false;
 
   // ---- labels (HTML overlay)
   const labelsEl = document.getElementById('labels');
   const labels = [];
-  function addLabel(html, pos, cat, owner, when) {
+  function addLabel(html, pos, cat, owner, when, onlyDims) {
     const el = document.createElement('div');
     el.className = 'lbl ' + cat;
     el.innerHTML = html;
     el.hidden = true;
     labelsEl.appendChild(el);
-    labels.push({ el, pos, cat, owner, when });
+    labels.push({ el, pos, cat, owner, when, onlyDims });
   }
 
   // ---- dimensions: overall length along each wall 180 mm inside the room, and a chain to the openings 650 mm inside
@@ -521,13 +573,374 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
   dimPts.push(hx, 0, hz, hx, M(H), hz, hx - 0.05, 0.002, hz, hx + 0.05, 0.002, hz, hx - 0.05, M(H), hz, hx + 0.05, M(H), hz);
   addLabel(`${H}?<small>потолок, принято</small>`, new THREE.Vector3(hx, M(H) / 2, hz), 'dim');
   dims.add(new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(dimPts, 3)), dimMat));
+  dims.visible = false;
 
-  addLabel('Окно ≈ 1610 × 1500<small>подоконник 800 от пола — принято</small>', new THREE.Vector3(M(20), M(2420), M(WIN.z0 + 300)), 'obj', wallById.west);
-  addLabel('Дверь в котельную<small>проём 910 · открывается в кухню</small>', new THREE.Vector3(M((DN.x0 + DN.x1) / 2), M(2330), M(300)), 'obj', wallById.north);
-  addLabel('Дверь в коридор<small>проём ≈ 870 · открывается в коридор</small>', new THREE.Vector3(M(RX - 20), M(2330), M(DE.z0 - 420)), 'obj', wallById.east);
+  addLabel('Окно ≈ 1610 × 1400, тройное<small>подоконник ≈ на уровне столешницы</small>', new THREE.Vector3(M(20), M(2420), M(WIN.z0 + 300)), 'obj', wallById.west, null, true);
+  addLabel('Дверь в котельную<small>проём 910 · открывается в кухню</small>', new THREE.Vector3(M((DN.x0 + DN.x1) / 2), M(2330), M(300)), 'obj', wallById.north, null, true);
+  addLabel('Дверь в коридор<small>проём ≈ 870 · открывается в коридор</small>', new THREE.Vector3(M(RX - 20), M(2330), M(DE.z0 - 420)), 'obj', wallById.east, null, true);
   addLabel('Мини-котельная<small>пол −80</small>', new THREE.Vector3(M((DN.x0 + DN.x1) / 2), M(60), M(-150)), 'room', null);
   addLabel('Коридор', new THREE.Vector3(M(RX + 1300), M(150), M((DE.z0 + DE.z1) / 2)), 'room', null);
   addLabel('Улица', new THREE.Vector3(M(-800), M(150), M((WIN.z0 + WIN.z1) / 2)), 'room', null, () => cam === ortho || wallById.west.hidden);
+
+  // ===================== furniture: a small toolkit and five layout variants =====================
+  // Sizes in mm. A run of cabinets is described in its own frame F = { axis: 'x' | 'z', back, dir }: u runs along the run (world x or z),
+  // v goes from the run's back (a wall or an island spine) at world coordinate `back` toward the fronts, in world direction `dir` (±1).
+  const furn = new THREE.Group(); scene.add(furn);
+  const vWallExtras = [];
+  const PL = 100, T0 = 880, T1 = 900, DEP = 600;          // plinth height, worktop bottom / top, cabinet depth
+  function woodTexture(base, seed) {                         // oak veneer, grain along u (horizontal on fronts); 1024 px = 1 m
+    const N = 1024, c = document.createElement('canvas'); c.width = c.height = N;
+    const g = c.getContext('2d'), r = rng(seed);
+    g.fillStyle = base; g.fillRect(0, 0, N, N);
+    for (let k = 0; k < 34; k++) {
+      const y = r() * N, h = 6 + r() * 42;
+      g.fillStyle = r() < 0.55 ? `rgba(60,40,20,${0.03 + r() * 0.06})` : `rgba(255,240,220,${0.03 + r() * 0.05})`;
+      g.fillRect(0, y, N, h); g.fillRect(0, y - N, N, h);
+    }
+    for (let k = 0; k < 360; k++) {
+      const y0 = r() * N, amp = 1 + r() * 6, f = 1 + Math.floor(r() * 3), ph = r() * 6.2832;
+      g.strokeStyle = r() < 0.75 ? `rgba(70,48,28,${0.05 + r() * 0.16})` : `rgba(250,236,214,${0.05 + r() * 0.1})`;
+      g.lineWidth = 0.6 + r() * 1.6;
+      for (const dy of [0, -N, N]) {
+        g.beginPath();
+        for (let x = 0; x <= N; x += 16) { const y = y0 + dy + amp * Math.sin(ph + x / N * 6.2832 * f); if (x) g.lineTo(x, y); else g.moveTo(x, y); }
+        g.stroke();
+      }
+    }
+    for (let k = 0; k < 900; k++) { g.fillStyle = `rgba(60,40,22,${0.08 + r() * 0.18})`; g.fillRect(r() * N, r() * N, 3 + r() * 14, 1); }
+    const tx = new THREE.CanvasTexture(c); tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    return tx;
+  }
+  function marbleTexture() {                                 // light marble-look porcelain slab with grey veins; one repeat ≈ 2.9 m
+    const N = 1024, c = document.createElement('canvas'); c.width = c.height = N;
+    const g = c.getContext('2d'), r = rng(5);
+    g.fillStyle = '#ece8e2'; g.fillRect(0, 0, N, N);
+    for (let k = 0; k < 18; k++) {
+      const x = r() * N, y = r() * N, rad = 120 + r() * 300, gr = g.createRadialGradient(x, y, 0, x, y, rad);
+      gr.addColorStop(0, `rgba(205,198,190,${0.15 + r() * 0.2})`); gr.addColorStop(1, 'rgba(205,198,190,0)');
+      g.fillStyle = gr; g.fillRect(0, 0, N, N);
+    }
+    for (let k = 0; k < 9; k++) {
+      let x = r() * N, y = -40; const pts = [[x, y]];
+      while (y < N + 40) { x += (r() - 0.35) * 160; y += 60 + r() * 120; pts.push([x, y]); }
+      for (const [w, a] of [[9, 0.05], [2.2, 0.38], [0.9, 0.55]]) {
+        g.strokeStyle = `rgba(118,112,104,${a * (0.5 + r() * 0.6)})`; g.lineWidth = w * (0.6 + r() * 0.8);
+        g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
+        for (let i = 1; i < pts.length; i++) { const [px, py] = pts[i - 1], [qx, qy] = pts[i]; g.quadraticCurveTo(px + (r() - 0.5) * 60, (py + qy) / 2, qx, qy); }
+        g.stroke();
+      }
+    }
+    const tx = new THREE.CanvasTexture(c); tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    return tx;
+  }
+  const wood = (base, seed) => { const m = new THREE.MeshStandardMaterial({ map: woodTexture(base, seed), roughness: 0.72 }); m.userData.wuv = 1000; return m; };
+  const std = (color, roughness, extra) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness }, extra || {}));
+  const MF = {
+    oak: wood('#ad8a63', 11), oakDark: wood('#6e5442', 23),
+    cashmere: std(0xd9cdbd, 0.82), graphite: std(0x3a3c3f, 0.75),
+    top: std(0x1e1e1e, 0.42), seam: std(0x141414, 0.8), plinth: std(0x232323, 0.8),
+    glass: std(0x0b0b0b, 0.12, { metalness: 0.4 }), vent: std(0x4a4a4a, 0.6, { metalness: 0.4 }),
+    steel: std(0xbfc3c7, 0.3, { metalness: 0.85 }), black: std(0x1a1a1a, 0.4, { metalness: 0.5 }), sink: std(0x0c0c0c, 0.3),
+    boucle: std(0xe9e2d7, 1), fabric: std(0xcdbfae, 1), pot: std(0xd9d1c6, 0.9), leaf: std(0x55704a, 0.8), stem: std(0x5a4636, 0.9),
+    shade: std(0xdfe7ec, 0.05, { transparent: true, opacity: 0.3, depthWrite: false, side: THREE.DoubleSide }),
+    shadeAmber: std(0xd8a15a, 0.05, { transparent: true, opacity: 0.42, depthWrite: false, side: THREE.DoubleSide }),
+    bulb: std(0xffffff, 0.5, { emissive: 0xfff0d2, emissiveIntensity: 1 }),
+  };
+  MF.marble = new THREE.MeshStandardMaterial({ map: marbleTexture(), roughness: 0.35 }); MF.marble.userData.wuv = 2900;
+  MF.tableTop = new THREE.MeshStandardMaterial({ map: woodTexture('#ad8a63', 37), roughness: 0.6 });
+  const ringMat = new THREE.LineBasicMaterial({ color: 0x8c8c8c });
+  const SW = { oak: '#ad8a63', oakDark: '#6e5442', cashmere: '#d9cdbd', graphite: '#3a3c3f', black: '#1e1e1e', marble: '#e9e5df', boucle: '#e9e2d7' };
+
+  function L(F, u0, u1, y0, y1, v0, v1, mat, parent = furn, cast = true) {
+    const p = F.back + F.dir * v0, q = F.back + F.dir * v1, c0 = Math.min(p, q), c1 = Math.max(p, q);
+    return F.axis === 'x' ? boxMM(u0, u1, y0, y1, c0, c1, mat, parent, cast) : boxMM(c0, c1, y0, y1, u0, u1, mat, parent, cast);
+  }
+  const P = (F, u, v) => { const c = F.back + F.dir * v; return F.axis === 'x' ? [u, c] : [c, u]; };
+  function cyl(r0, r1, h, mat, seg = 24) { const m = new THREE.Mesh(new THREE.CylinderGeometry(M(r0), M(r1), M(h), seg), mat); m.castShadow = m.receiveShadow = true; return m; }
+  function put(o, x, y, z, parent = furn) { o.position.set(M(x), M(y), M(z)); parent.add(o); return o; }
+  function vLabel(html, x, y, z) { addLabel(html, new THREE.Vector3(M(x), M(y), M(z)), 'obj', null); labels[labels.length - 1].v = true; }
+
+  // lower run: plinth recessed 60, carcass, black Gola groove under the worktop and between drawers, 20 mm worktop.
+  // units: [[u0, u1, type]], type: drawers | drawers2 | sink | dw | hob | blind | filler.
+  // over: worktop overhang { front, back, a0, a1 }; island: { fluted, mat, ends: [bool, bool], waterfall: 0 | 1 } for free-standing runs
+  function lowerRun(o) {
+    const F = o, a0 = o.units[0][0], a1 = o.units[o.units.length - 1][1];
+    const ov = Object.assign({ front: 20, back: 0, a0: 0, a1: 0 }, o.over || {});
+    L(F, a0, a1, 0, PL, 0, DEP - 60, MF.plinth);
+    L(F, a0, a1, PL, T0, 0, DEP - 22, o.front);
+    L(F, a0, a1, PL, T0, DEP - 22, DEP - 20, MF.seam, furn, false);
+    L(F, a0 - ov.a0, a1 + ov.a1, T0, T1, -ov.back, DEP + ov.front, MF.top);
+    o.units.forEach(([u0, u1, type]) => lowerFront(F, u0, u1, type, o.front));
+    const I = o.island;
+    if (I) {
+      const bm = I.mat || o.front;
+      if (I.fluted) for (let u = a0; u + 30 <= a1 + 0.5; u += 30) L(F, u + 5, u + 30, PL - 40, T0, -16, 0, bm);
+      else L(F, a0, a1, PL - 40, T0, -18, 0, bm);
+      (I.ends || [true, true]).forEach((e, i) => { if (e) L(F, i ? a1 : a0 - 18, i ? a1 + 18 : a0, 0, T0, -18, DEP, bm); });
+      if (I.waterfall !== undefined) { const i = I.waterfall; L(F, i ? a1 + ov.a1 : a0 - ov.a0 - 20, i ? a1 + ov.a1 + 20 : a0 - ov.a0, 0, T1, -ov.back, DEP + ov.front, MF.top); }
+    }
+  }
+  function lowerFront(F, u0, u1, type, mat) {
+    const G = 32, g = 22, yb = PL + 3, h = T0 - G - yb;
+    const rows = type === 'drawers' || type === 'hob' ? [0.42, 0.33, 0.25] : type === 'drawers2' || type === 'sink' ? [0.55, 0.45] : [1];
+    const hh = h - g * (rows.length - 1);
+    let y = yb;
+    rows.forEach(r => { L(F, u0 + 1.5, u1 - 1.5, y, y + hh * r, DEP - 20, DEP, mat); y += hh * r + g; });
+    if (type === 'sink') sinkAt(F, (u0 + u1) / 2);
+    if (type === 'hob') hobAt(F, (u0 + u1) / 2, Math.min(800, u1 - u0 - 40));
+  }
+  function sinkAt(F, u) {                                    // black undermount sink 740 × 450 with a black gooseneck tap
+    L(F, u - 370, u + 370, T1, T1 + 1.5, 95, 545, MF.sink, furn, false);
+    const [dx, dz] = P(F, u, 330); put(cyl(36, 36, 3, MF.steel), dx, T1 + 2, dz);
+    const g = new THREE.Group(); g.userData.noWin = true; furn.add(g);
+    const v = 55, R = 110, top = T1 + 300;
+    const [x, z] = P(F, u, v); put(cyl(26, 28, 30, MF.black), x, T1 + 15, z, g); put(cyl(13, 13, 270, MF.black, 16), x, T1 + 165, z, g);
+    const arc = new THREE.Mesh(new THREE.TorusGeometry(M(R), M(13), 10, 28, Math.PI), MF.black); arc.castShadow = true;
+    const [cx, cz] = P(F, u, v + R); put(arc, cx, top, cz, g);
+    arc.rotation.y = F.axis === 'x' ? -F.dir * Math.PI / 2 : (F.dir > 0 ? 0 : Math.PI);
+    const [sx, sz] = P(F, u, v + 2 * R); put(cyl(12, 12, 80, MF.black, 16), sx, top - 40, sz, g);
+  }
+  function hobAt(F, u, w) {                                  // induction hob with a built-in downdraft vent strip in the middle (no hood)
+    L(F, u - w / 2, u + w / 2, T1, T1 + 5, 55, 575, MF.glass, furn, false);
+    L(F, u - 45, u + 45, T1 + 5, T1 + 6, 75, 555, MF.vent, furn, false);
+    const pts = [];
+    [[-1, 190, 95], [-1, 430, 80], [1, 190, 80], [1, 430, 95]].forEach(([s, v, r]) => {
+      const cu = u + s * (w / 4 + 25);
+      for (let i = 0; i < 48; i++) {
+        const a = i / 48 * 6.2832, b = (i + 1) / 48 * 6.2832;
+        const [x0, z0] = P(F, cu + r * Math.cos(a), v + r * Math.sin(a)), [x1, z1] = P(F, cu + r * Math.cos(b), v + r * Math.sin(b));
+        pts.push(M(x0), M(T1 + 5.5), M(z0), M(x1), M(T1 + 5.5), M(z1));
+      }
+    });
+    furn.add(new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)), ringMat));
+  }
+  // tall run to the ceiling: fridge (integrated, freezer below) | oven (oven at eye level + compact microwave above) | pantry
+  function tallRun(o) {
+    const F = o, a0 = o.units[0][0], a1 = o.units[o.units.length - 1][1], mat = o.front;
+    L(F, a0, a1, 0, PL, 0, DEP - 60, MF.plinth);
+    L(F, a0, a1, PL, H, 0, DEP - 22, mat);
+    L(F, a0, a1, PL, H - 3, DEP - 22, DEP - 20, MF.seam, furn, false);
+    o.units.forEach(([u0, u1, type]) => {
+      const fr = (y0, y1) => L(F, u0 + 1.5, u1 - 1.5, y0 + 1.5, y1 - 1.5, DEP - 20, DEP, mat);
+      if (type === 'fridge') { fr(PL, 880); fr(880, 1880); fr(1880, H); }
+      else if (type === 'pantry') { fr(PL, 1880); fr(1880, H); }
+      else if (type === 'oven') {
+        fr(PL, 420); fr(420, 720);
+        L(F, u0 + 4, u1 - 4, 722, 1316, DEP - 20, DEP + 2, MF.glass);
+        L(F, u0 + 60, u1 - 60, 1250, 1266, DEP + 2, DEP + 30, MF.steel, furn, false);
+        L(F, u0 + 4, u1 - 4, 1320, 1774, DEP - 20, DEP + 2, MF.glass);
+        L(F, u0 + 60, u1 - 60, 1712, 1726, DEP + 2, DEP + 28, MF.steel, furn, false);
+        fr(1776, H);
+      }
+    });
+  }
+  function wallSlab(id, a, b, y0, y1) {                      // marble-look porcelain on the wall instead of upper cabinets
+    const g = wallById[id].full;
+    const m = id === 'north' ? boxMM(a, b, y0, y1, 0, 10, MF.marble, g, false) : id === 'south' ? boxMM(a, b, y0, y1, RZ - 10, RZ, MF.marble, g, false)
+      : id === 'west' ? boxMM(0, 10, y0, y1, a, b, MF.marble, g, false) : boxMM(RX - 10, RX, y0, y1, a, b, MF.marble, g, false);
+    vWallExtras.push(m);
+  }
+  function stoolAt(x, z) {                                   // counter stool, seat 670
+    const g = new THREE.Group(); put(g, x, 0, z);
+    put(cyl(190, 180, 60, MF.fabric, 28), 0, 640, 0, g);
+    for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + Math.PI / 4; put(cyl(10, 10, 610, MF.black, 10), Math.cos(a) * 150, 305, Math.sin(a) * 150, g); }
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(M(150), M(8), 8, 32), MF.black); ring.rotation.x = Math.PI / 2; put(ring, 0, 250, 0, g);
+  }
+  function chairAt(x, z, tx, tz) {                           // upholstered dining chair turned toward (tx, tz)
+    const g = new THREE.Group(); put(g, x, 0, z); g.rotation.y = Math.atan2(tx - x, tz - z);
+    boxMM(-225, 225, 420, 480, -225, 225, MF.boucle, g);
+    boxMM(-215, 215, 480, 860, -240, -190, MF.boucle, g);
+    [[-185, -185], [185, -185], [-185, 185], [185, 185]].forEach(([a, b]) => put(cyl(14, 12, 420, MF.black, 10), a, 210, b, g));
+  }
+  function tableAt(x, z, D) {                                // round table: oak top on a black pedestal
+    put(new THREE.Mesh(new THREE.CylinderGeometry(M(D / 2), M(D / 2), M(30), 64), MF.tableTop), x, 735, z).castShadow = true;
+    put(cyl(60, 90, 690, MF.black), x, 375, z);
+    put(cyl(300, 320, 30, MF.black, 40), x, 15, z);
+  }
+  function benchSouth(x0, x1) {                              // upholstered bench along the living-room wall
+    boxMM(x0, x1, 0, 80, 3740, RZ, MF.plinth, furn);
+    boxMM(x0, x1, 80, 380, 3720, RZ, MF.oak, furn);
+    boxMM(x0 + 10, x1 - 10, 380, 450, 3730, RZ, MF.fabric, furn);
+    boxMM(x0 + 10, x1 - 10, 450, 880, RZ - 110, RZ, MF.fabric, furn);
+  }
+  function pendantAt(x, z, along, bottom) {                  // the client's lamp: black bar, three glass cylinders (middle one amber)
+    const g = new THREE.Group(); g.userData.noCheck = true; furn.add(g);
+    const ax = along === 'x';
+    boxMM(ax ? x - 350 : x - 30, ax ? x + 350 : x + 30, H - 22, H, ax ? z - 30 : z - 350, ax ? z + 30 : z + 350, MF.black, g, false);
+    [-235, 0, 235].forEach((o, i) => {
+      const px = ax ? x + o : x, pz = ax ? z : z + o;
+      put(cyl(2, 2, H - 22 - (bottom + 290), MF.black, 6), px, (H - 22 + bottom + 290) / 2, pz, g);
+      put(cyl(17, 17, 140, MF.steel, 18), px, bottom + 220, pz, g);
+      put(new THREE.Mesh(new THREE.CylinderGeometry(M(62), M(62), M(150), 32, 1, true), i === 1 ? MF.shadeAmber : MF.shade), px, bottom + 75, pz, g);
+      put(new THREE.Mesh(new THREE.SphereGeometry(M(30), 16, 12), MF.bulb), px, bottom + 75, pz, g);
+    });
+    g.traverse(m => { m.castShadow = false; });
+  }
+  function plantAt(x, z) {
+    const g = new THREE.Group(); g.userData.noCheck = true; furn.add(g);
+    put(cyl(170, 140, 420, MF.pot, 28), x, 210, z, g);
+    put(cyl(10, 12, 700, MF.stem, 8), x, 700, z, g);
+    const r = rng(Math.round(x + z));
+    for (let k = 0; k < 16; k++) {
+      const a = r() * 6.2832, d = 50 + r() * 230, lf = new THREE.Mesh(new THREE.SphereGeometry(M(110 + r() * 60), 10, 8), MF.leaf);
+      lf.scale.set(1, 0.45, 0.8); lf.rotation.set(r(), a, r());
+      put(lf, x + Math.cos(a) * d, 800 + r() * 750, z + Math.sin(a) * d, g);
+    }
+  }
+
+  // ---- the variants. Room: x 0 (window wall) → 4000 (corridor wall), z 0 (boiler-room wall) → 4170 (living-room wall).
+  //      Kept clear in every variant: the boiler-room door swing (x 2960..3870, z 0..830), the corridor door (x 3000..4000, z 2850..3820)
+  //      and the walk between them along the corridor wall.
+  const ORBIT0 = { pos: [5.6, 5.3, 7.7], target: [1.95, 0.7, 1.95], fov: 40 }, WINDOW0 = { pos: [0.45, 1.55, 1.9], target: [4.0, 1.0, 3.0], fov: 64 };
+  const VARIANTS = [
+    { name: 'Пустая комната', title: 'Кухня без мебели', lede: 'Комната по плану этажа: стены, тройное окно, две двери и плитка на полу, как на фото.', build() {} },
+    { name: 'Остров с плитой', title: '1 · Остров с варочной панелью',
+      lede: 'Мойка у окна, пенал с техникой у стены котельной, а в центре остров с варочной панелью и барной стойкой на 3 места.',
+      points: ['Верхних шкафов нет: всё хранится в нижних ящиках, пенале и острове', 'Пенал до потолка: холодильник, духовка с СВЧ на уровне глаз, кладовая',
+        'Варочная панель на острове со встроенной вытяжкой, готовишь лицом в комнату', 'Мойка у окна, посудомойка рядом; проходы около 1 м',
+        'Путь из коридора в котельную идёт за островом и не пересекает рабочую зону'],
+      items: [['Ряд вдоль окна', '4170 × 600'], ['Пенал', '1600 × 600 × 2700'], ['Остров', '1800 × 920 + 300 под стулья'], ['Мойка + посудомойка', '800 + 600'], ['Варочная', '760']],
+      pal: [['дуб', SW.oak], ['кашемир', SW.cashmere], ['чёрная столешница', SW.black], ['мрамор', SW.marble]],
+      build() {
+        lowerRun({ axis: 'z', back: 0, dir: 1, front: MF.oak,
+          units: [[0, 600, 'blind'], [600, 1185, 'drawers'], [1185, 1785, 'dw'], [1785, 2585, 'sink'], [2585, 3185, 'drawers'], [3185, 3785, 'drawers'], [3785, RZ, 'drawers']] });
+        lowerRun({ axis: 'x', back: 0, dir: 1, front: MF.oak, units: [[600, 1220, 'drawers']] });
+        tallRun({ axis: 'x', back: 0, dir: 1, front: MF.cashmere, units: [[1220, 1820, 'fridge'], [1820, 2420, 'oven'], [2420, 2820, 'pantry']] });
+        lowerRun({ axis: 'z', back: 2200, dir: -1, front: MF.oak, over: { back: 300, front: 20, a0: 20, a1: 20 }, island: { fluted: true },
+          units: [[1600, 2100, 'drawers'], [2100, 2900, 'hob'], [2900, 3400, 'drawers']] });
+        [1950, 2500, 3050].forEach(z => stoolAt(2470, z));
+        wallSlab('west', 0, WIN.z0, T1, 1500); wallSlab('west', WIN.z1, RZ, T1, 1500); wallSlab('north', 0, 1220, T1, 1500);
+        pendantAt(2040, 2500, 'z', 1650);
+        vLabel('Пенал до потолка<small>холодильник · духовка + СВЧ · кладовая</small>', 2020, 2350, 300);
+        vLabel('Остров<small>варочная со встроенной вытяжкой · 3 стула</small>', 1900, 1250, 2500);
+        vLabel('Мойка у окна<small>и посудомойка рядом</small>', 300, 1150, 2185);
+      } },
+    { name: 'Круглый стол у окна', title: '2 · Круглый стол у окна', orbit: { pos: [-2.6, 5.3, 7.3], target: [2.1, 0.7, 1.9], fov: 40 },
+      views: { window: { pos: [0.35, 1.6, 3.95], target: [3.2, 1.0, 0.9], fov: 64 } },
+      lede: 'Обеденная зона у окна: круглый стол Ø1100 на 4 места под вашим светильником. Кухня стоит одним рядом вдоль стены котельной, техника в пенале между дверями.',
+      points: ['Плита, посудомойка и мойка в одном ряду, между ними рабочая поверхность', 'Пенал между дверями: кладовая, духовка с СВЧ, холодильник ближе к коридору, чтобы удобно разгружать продукты',
+        'Вместо верхних шкафов мраморная панель до потолка', 'Варочная панель со встроенной вытяжкой', 'У окна самый светлый угол, там стоит стол'],
+      items: [['Ряд у стены котельной', '2880 × 600'], ['Пенал', '1800 × 600 × 2700'], ['Стол круглый', 'Ø1100, 4 стула'], ['Мойка + посудомойка', '800 + 600'], ['Варочная', '760']],
+      pal: [['кашемир', SW.cashmere], ['дуб', SW.oak], ['чёрная столешница', SW.black], ['мрамор', SW.marble]],
+      build() {
+        lowerRun({ axis: 'x', back: 0, dir: 1, front: MF.cashmere,
+          units: [[0, 600, 'drawers'], [600, 1400, 'hob'], [1400, 2000, 'dw'], [2000, 2800, 'sink'], [2800, 2880, 'filler']] });
+        tallRun({ axis: 'z', back: RX, dir: -1, front: MF.oak, units: [[900, 1500, 'pantry'], [1500, 2100, 'oven'], [2100, 2700, 'fridge']] });
+        wallSlab('north', 0, 2880, T1, H);
+        tableAt(1100, 2550, 1100);
+        [[400, 2550], [1800, 2550], [1100, 1850], [1100, 3250]].forEach(([x, z]) => chairAt(x, z, 1100, 2550));
+        pendantAt(1100, 2550, 'z', 1500);
+        plantAt(3650, 4000);
+        vLabel('Ряд у стены котельной<small>плита · посудомойка · мойка</small>', 1440, 1150, 300);
+        vLabel('Пенал между дверями<small>кладовая · духовка + СВЧ · холодильник</small>', 3700, 2350, 1800);
+        vLabel('Круглый стол Ø1100<small>4 места, ваш светильник</small>', 1100, 1050, 2550);
+      } },
+    { name: 'Кухня у глухой стены + остров', title: '3 · Кухня у глухой стены и остров', orbit: { pos: [5.5, 5.3, -3.3], target: [1.9, 0.7, 2.4], fov: 40 },
+      lede: 'Вся кухня стоит у стены к комнате, где нет ни окна, ни дверей: мойка, посудомойка и два пенала. Остров с плитой и стойкой на 3 места, окно остаётся свободным.',
+      points: ['Окно ничем не закрыто: у него можно поставить кресло или большое растение', 'Пенал из тёмного дуба: холодильник, духовка с СВЧ',
+        'За мойкой мраморная панель до потолка', 'На острове варочная панель со встроенной вытяжкой, напротив мойка, между ними 1 м', 'Путь из коридора в котельную свободен'],
+      items: [['Ряд у стены к комнате', '1800 × 600'], ['Пенал', '1200 × 600 × 2700'], ['Остров', '2000 × 920 + 300 под стулья'], ['Мойка + посудомойка', '800 + 600'], ['Варочная', '760']],
+      pal: [['кашемир', SW.cashmere], ['тёмный дуб', SW.oakDark], ['чёрная столешница', SW.black], ['мрамор', SW.marble]],
+      build() {
+        lowerRun({ axis: 'x', back: RZ, dir: -1, front: MF.cashmere, units: [[0, 400, 'drawers'], [400, 1200, 'sink'], [1200, 1800, 'dw']] });
+        tallRun({ axis: 'x', back: RZ, dir: -1, front: MF.oakDark, units: [[1800, 2400, 'fridge'], [2400, 3000, 'oven']] });
+        wallSlab('south', 0, 1800, T1, H);
+        lowerRun({ axis: 'x', back: 1970, dir: 1, front: MF.cashmere, over: { back: 300, front: 20, a0: 20, a1: 20 }, island: { fluted: true, mat: MF.oakDark },
+          units: [[800, 1300, 'drawers'], [1300, 2100, 'hob'], [2100, 2800, 'drawers']] });
+        [1200, 1800, 2400].forEach(x => stoolAt(x, 1690));
+        pendantAt(1800, 2270, 'x', 1650);
+        plantAt(420, 1050);
+        vLabel('Мойка и посудомойка<small>мрамор до потолка</small>', 900, 1150, 3870);
+        vLabel('Пенал, тёмный дуб<small>холодильник · духовка + СВЧ</small>', 2400, 2350, 3870);
+        vLabel('Остров<small>варочная · 3 стула</small>', 1800, 1250, 2270);
+      } },
+    { name: 'Вдоль окна + стол с диванчиком', title: '4 · Вдоль окна, стол с диванчиком', orbit: { pos: [2.0, 5.6, -3.7], target: [2.0, 0.6, 2.4], fov: 40 },
+      lede: 'Рабочий ряд идёт вдоль окна: плита, мойка под окном, посудомойка. Пенал стоит между дверями, а у стены к комнате круглый стол с мягким диванчиком.',
+      points: ['Самая длинная рабочая поверхность: 3,2 м вдоль окна', 'Между плитой и мойкой около 70 см столешницы для готовки',
+        'Диванчик у стены экономит место: за столом помещаются 5–6 человек', 'Над плитой нет вытяжки, верхних шкафов тоже нет', 'Дуб и чёрный, как на последнем фото'],
+      items: [['Ряд вдоль окна', '3200 × 600'], ['Пенал', '1800 × 600 × 2700'], ['Диванчик', '1600 × 450'], ['Стол круглый', 'Ø1100'], ['Варочная', '760']],
+      pal: [['дуб', SW.oak], ['чёрная столешница', SW.black], ['кашемир (диванчик)', SW.cashmere], ['мрамор', SW.marble]],
+      build() {
+        lowerRun({ axis: 'z', back: 0, dir: 1, front: MF.oak,
+          units: [[0, 300, 'drawers'], [300, 1100, 'hob'], [1100, 1785, 'drawers'], [1785, 2585, 'sink'], [2585, 3185, 'dw'], [3185, 3200, 'filler']] });
+        tallRun({ axis: 'z', back: RX, dir: -1, front: MF.oak, units: [[900, 1500, 'pantry'], [1500, 2100, 'oven'], [2100, 2700, 'fridge']] });
+        wallSlab('west', 0, WIN.z0, T1, 1500); wallSlab('west', WIN.z1, 3200, T1, 1500);
+        benchSouth(1100, 2700);
+        tableAt(1900, 3300, 1100);
+        [[1900, 2600], [1200, 3300], [2600, 3300]].forEach(([x, z]) => chairAt(x, z, 1900, 3300));
+        pendantAt(1900, 3300, 'x', 1500);
+        vLabel('Ряд вдоль окна 3,2 м<small>плита · мойка · посудомойка</small>', 300, 1150, 1500);
+        vLabel('Пенал между дверями<small>кладовая · духовка + СВЧ · холодильник</small>', 3700, 2350, 1800);
+        vLabel('Стол Ø1100 и диванчик<small>до 6 мест</small>', 1900, 1150, 3300);
+      } },
+    { name: 'Г-образная с барной стойкой', title: '5 · Г-образная с барной стойкой', orbit: { pos: [1.6, 5.6, 8.0], target: [1.8, 0.6, 1.6], fov: 40 },
+      lede: 'Г-образная кухня у окна и стены котельной, с полуостровом и барной стойкой на 3 места. Пенал между дверями сделан в тёмном цвете.',
+      points: ['Рабочий угол: мойка у окна, плита у стены котельной, посудомойка между ними', 'Полуостров отделяет кухню от прохода, с его торца столешница опускается до пола',
+        'Пенал графитовый: холодильник, духовка с СВЧ, кладовая', 'Варочная панель со встроенной вытяжкой, верхних шкафов нет', 'Внутри буквы «Г» 1,8 м свободного места: можно работать вдвоём'],
+      items: [['Ряд вдоль окна', '2400 × 600'], ['Ряд у стены котельной', '2280 × 600'], ['Полуостров', '2400 × 920 + 300 под стулья'], ['Пенал', '1800 × 600 × 2700'], ['Варочная', '800']],
+      pal: [['дуб', SW.oak], ['графит', SW.graphite], ['чёрная столешница', SW.black], ['мрамор', SW.marble]],
+      build() {
+        lowerRun({ axis: 'z', back: 0, dir: 1, front: MF.oak, units: [[0, 600, 'blind'], [600, 1000, 'drawers'], [1000, 1600, 'dw'], [1600, 2400, 'sink']] });
+        lowerRun({ axis: 'x', back: 0, dir: 1, front: MF.oak, units: [[600, 1200, 'drawers'], [1200, 2100, 'hob'], [2100, 2880, 'drawers']] });
+        lowerRun({ axis: 'x', back: 3000, dir: -1, front: MF.oak, over: { back: 300, front: 20 }, island: { fluted: true, ends: [false, false], waterfall: 1 },
+          units: [[0, 600, 'blind'], [600, 1200, 'drawers'], [1200, 1800, 'drawers'], [1800, 2400, 'drawers']] });
+        tallRun({ axis: 'z', back: RX, dir: -1, front: MF.graphite, units: [[900, 1500, 'fridge'], [1500, 2100, 'oven'], [2100, 2700, 'pantry']] });
+        [900, 1500, 2100].forEach(x => stoolAt(x, 3290));
+        wallSlab('north', 600, 2880, T1, 1500); wallSlab('west', 0, WIN.z0, T1, 1500);
+        pendantAt(1300, 3150, 'x', 1650);
+        vLabel('Г-образный рабочий угол<small>мойка у окна · плита у котельной</small>', 1500, 1150, 300);
+        vLabel('Барная стойка<small>3 стула, торец до пола</small>', 1300, 1250, 3150);
+        vLabel('Пенал, графит<small>холодильник · духовка + СВЧ · кладовая</small>', 3700, 2350, 1800);
+      } },
+  ];
+
+  const vTitle = document.getElementById('v-title'), vLede = document.getElementById('v-lede'), vBody = document.getElementById('v-body');
+  function renderPanel(V) {
+    vTitle.textContent = V.title; vLede.textContent = V.lede;
+    vBody.innerHTML = (V.points ? `<h2>Что учтено</h2><ul class="points">${V.points.map(s => `<li>${s}</li>`).join('')}</ul>` : '')
+      + (V.items ? `<h2>Состав, мм</h2><dl class="spec">${V.items.map(([a, b]) => `<div><dt>${a}</dt><dd>${b}</dd></div>`).join('')}</dl>` : '')
+      + (V.pal ? `<h2>Цвета</h2><div class="pal">${V.pal.map(([n, c]) => `<span><i style="background:${c}"></i>${n}</span>`).join('')}</div>` : '');
+  }
+  function clearVariant() {
+    furn.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+    furn.clear();
+    vWallExtras.forEach(m => { m.parent.remove(m); m.geometry.dispose(); }); vWallExtras.length = 0;
+    for (let i = labels.length - 1; i >= 0; i--) if (labels[i].v) { labels[i].el.remove(); labels.splice(i, 1); }
+  }
+  let curVariant = 0;
+  function buildVariant(n) {
+    clearVariant();
+    curVariant = n;
+    const V = VARIANTS[n];
+    V.build();
+    renderPanel(V);
+    Object.assign(VIEWS.orbit, V.orbit || ORBIT0);
+    Object.assign(VIEWS.window, (V.views && V.views.window) || WINDOW0);
+    shadowDirty = true;
+  }
+  // clearance report for tests (#check): nothing in the door zones, outside the room or in front of the window glass
+  function runCheck() {
+    const out = [], box = new THREE.Box3();
+    const e = 0.001, hit = (b, x0, x1, z0, z1, y1 = 1e9) => b.min.x < M(x1) - e && b.max.x > M(x0) + e && b.min.z < M(z1) - e && b.max.z > M(z0) + e && b.min.y < M(y1);
+    for (let i = 1; i < VARIANTS.length; i++) {
+      buildVariant(i); scene.updateMatrixWorld(true);
+      const probs = new Set();
+      furn.traverse(o => {
+        if (!o.isMesh) return;
+        let skip = false, noWin = false;
+        for (let p = o; p; p = p.parent) { if (p.userData.noCheck) skip = true; if (p.userData.noWin) noWin = true; }
+        if (skip) return;
+        box.setFromObject(o);
+        const at = `x ${Math.round(box.min.x * 1000)}..${Math.round(box.max.x * 1000)}, z ${Math.round(box.min.z * 1000)}..${Math.round(box.max.z * 1000)}`;
+        if (hit(box, DN.x0, DN.x1, 0, 850, 2100)) probs.add('дверь в котельную: ' + at);
+        if (hit(box, 3000, RX, DE.z0 - 50, DE.z1 + 50)) probs.add('дверь в коридор: ' + at);
+        if (box.min.x < -0.002 || box.max.x > M(RX) + 0.002 || box.min.z < -0.002 || box.max.z > M(RZ) + 0.002) probs.add('за стеной: ' + at);
+        if (!noWin && box.max.x < 0.7 && box.max.y > M(WIN.y0 + 8) && box.min.z < M(WIN.z1) && box.max.z > M(WIN.z0)) probs.add('закрывает окно: ' + at);
+      });
+      out.push(`v${i}: ` + (probs.size ? [...probs].join(' | ') : 'ok'));
+    }
+    const pre = document.createElement('pre'); pre.id = 'check'; pre.hidden = true; pre.textContent = out.join('\n'); document.body.appendChild(pre);
+  }
 
   // ---- cameras & views (metres)
   const PLAN_CENTER = [M(RX / 2), 0, M(RZ / 2)];
@@ -638,6 +1051,7 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
     openKind.door = !openKind.door;
     e.currentTarget.setAttribute('aria-pressed', String(openKind.door));
     if (reduceMotion) hinges.forEach(h => { h.pivot.rotation.y = openKind[h.kind] ? h.angle : 0; });
+    shadowDirty = true;
   });
 
   // ---- dollhouse: from outside, walls between the camera and the room drop to a low cut
@@ -648,7 +1062,7 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
     const inside = cam === ortho || insidePlan(p.x * 1000, p.z * 1000);
     for (const w of WALLS) {
       const hide = !inside && tv.copy(p).sub(w.mid).dot(w.nv) > 0.02;
-      if (hide !== w.hidden) { w.hidden = hide; w.full.visible = !hide; w.stub.visible = hide; }
+      if (hide !== w.hidden) { w.hidden = hide; w.full.visible = !hide; w.stub.visible = hide; shadowDirty = true; }
     }
   }
 
@@ -656,7 +1070,7 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
   function updateLabels() {
     const w = stage.clientWidth, h = stage.clientHeight;
     for (const L of labels) {
-      let show = !cleanView && (L.cat !== 'dim' || showDims) && !(L.owner && L.owner.hidden) && (!L.when || L.when());
+      let show = !cleanView && ((L.cat !== 'dim' && !L.onlyDims) || showDims) && !(L.owner && L.owner.hidden) && (!L.when || L.when());
       if (show) {
         lp.copy(L.pos).project(cam);
         show = lp.z > -1 && lp.z < 1 && Math.abs(lp.x) < 1.1 && Math.abs(lp.y) < 1.1;
@@ -695,26 +1109,45 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
       persp.updateProjectionMatrix();
       if (k === 1) tween = null;
     }
-    if (!reduceMotion) for (const h of hinges) { const a = openKind[h.kind] ? h.angle : 0; h.pivot.rotation.y += (a - h.pivot.rotation.y) * 0.1; }
+    if (!reduceMotion) for (const h of hinges) { const a = openKind[h.kind] ? h.angle : 0, d = a - h.pivot.rotation.y; if (Math.abs(d) > 1e-4) { h.pivot.rotation.y += d * 0.1; shadowDirty = true; } }
     controls.update();
     updateWalls();
+    if (shadowDirty) { renderer.shadowMap.needsUpdate = true; shadowDirty = false; }
     renderer.render(scene, cam);
     updateLabels();
     requestAnimationFrame(loop);
   }
 
-  // deep link: #plan, #door, #window, #wwest, #wnorth, #weast, #wsouth opens that view; add ",open" to open the doors, ",clean" to hide labels
-  const [hashView, ...hashOpts] = location.hash.slice(1).split(',');
+  // ---- variant picker and deep links: #v0…#v5 picks the variant; plan / door / window / wwest / wnorth / weast / wsouth the view;
+  //      open = doors open, clean = no labels, dims = dimensions on, check = clearance report into <pre id="check"> (for tests)
+  const vsel = document.getElementById('vsel');
+  VARIANTS.forEach((V, i) => { const o = document.createElement('option'); o.value = String(i); o.textContent = i ? `${i} · ${V.name}` : V.name; vsel.appendChild(o); });
+  let curView = 'orbit';
+  viewButtons.forEach(b => b.addEventListener('click', () => { curView = b.dataset.view; }));
+  vsel.addEventListener('change', () => {
+    const n = Number(vsel.value);
+    buildVariant(n);
+    try { history.replaceState(null, '', '#v' + n); } catch (e) {}
+    if (curView === 'orbit') setView('orbit');
+  });
+  const tokens = location.hash.slice(1).split(',').filter(Boolean);
+  let startV = 1;
+  tokens.forEach(s => { const m = /^v(\d)$/.exec(s); if (m && VARIANTS[+m[1]]) startV = +m[1]; });
   applyTheme();
+  if (tokens.includes('check')) runCheck();
+  buildVariant(startV);
+  vsel.value = String(startV);
   persp.position.set(...VIEWS.orbit.pos);
   persp.fov = VIEWS.orbit.fov;
   makeControls(VIEWS.orbit.target, false);
   if (window.ResizeObserver) new ResizeObserver(resize).observe(stage);
   window.addEventListener('resize', resize);
   resize();
-  if (hashView === 'plan' || VIEWS[hashView]) setView(hashView, true);
-  if (hashOpts.includes('clean') && !cleanView) cleanBtn.click();
-  if (hashOpts.includes('open')) { openKind.door = true; hinges.forEach(h => { h.pivot.rotation.y = h.angle; }); document.getElementById('t-door-open').setAttribute('aria-pressed', 'true'); }
+  const hv = tokens.find(s => s === 'plan' || (VIEWS[s] && s !== 'orbit'));
+  if (hv) { setView(hv, true); curView = hv; }
+  if (tokens.includes('dims') && !showDims) document.getElementById('t-dims').click();
+  if (tokens.includes('clean') && !cleanView) cleanBtn.click();
+  if (tokens.includes('open')) { openKind.door = true; hinges.forEach(h => { h.pivot.rotation.y = h.angle; }); document.getElementById('t-door-open').setAttribute('aria-pressed', 'true'); }
   requestAnimationFrame(loop);
 })();
 </script>
