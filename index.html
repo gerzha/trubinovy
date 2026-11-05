@@ -125,7 +125,7 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
   <aside class="panel">
     <p class="eyebrow">Трубиновы · план этажа</p>
     <h1>Кухня</h1>
-    <p class="lede">Пустая комната по плану этажа: стены, пол, окно и две двери. Мебель расставим следующим шагом.</p>
+    <p class="lede">Пустая комната по плану этажа: стены, окно, две двери и пол как на фото. Мебель расставим следующим шагом.</p>
 
     <div class="figures">
       <div><span class="num">16,7</span><span class="unit">м²</span><span class="cap">площадь пола</span></div>
@@ -158,6 +158,14 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
       <div><dt>…до стены к комнате</dt><dd class="guess">≈ 400</dd></div>
     </dl>
     <p class="note">Дверь в мини-котельную открывается внутрь кухни, петли со стороны коридора. Пол котельной на 80 мм ниже. Дверь в коридор открывается в коридор, петли с северной стороны. Её проём на плане не подписан. Кнопка «Двери» открывает обе двери.</p>
+
+    <h2>Пол</h2>
+    <dl class="spec">
+      <div><dt>Плитка под лён, светлая</dt><dd class="guess">400 × 400?</dd></div>
+      <div><dt>Вставки с орнаментом</dt><dd class="guess">80 × 80?</dd></div>
+      <div><dt>Раскладка</dt><dd>«вертушка»</dd></div>
+    </dl>
+    <p class="note">Рисунок взят с фото: крупная плитка, у каждой угла тёмная вставка, швы сдвигаются на ширину вставки. По фото видно соотношение размеров примерно 5 : 1, но не реальный размер. Поэтому плитка взята 40 × 40 см, а вставка 8 × 8 см.</p>
 
     <h2>Стены, мм</h2>
     <dl class="spec">
@@ -261,12 +269,79 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
     return leaf;
   }
 
-  // ---- floor: neutral, no finish chosen yet
+  // ---- floor as in the house (client's photo): light linen-look ceramic tile laid in a pinwheel with small dark ornamental inserts.
+  //      Tile : insert ≈ 5 : 1 measured off the photo; absolute size not known — taken as 400 × 400 and 80 × 80, joints 3 mm.
+  //      Pinwheel lattice: large tiles at i·(L, S) + j·(−S, L), the insert at (L − S, L) from each; it repeats every (L² + S²) / S = 2080 mm on both axes.
+  const TILE = { L: 400, S: 80, G: 3 };
+  function pinwheelTexture() {
+    const { L, S, G } = TILE, P = (L * L + S * S) / S;   // 1 px = 1 mm
+    const c = document.createElement('canvas'); c.width = c.height = P;
+    const g = c.getContext('2d');
+    const rng = key => { let s = 1 + key * 7919; const r = () => (s = (s * 16807) % 2147483647) / 2147483647; r(); r(); r(); return r; };
+    g.fillStyle = '#ab9f8b'; g.fillRect(0, 0, P, P);                         // grout
+    function tile(x, y, rnd) {
+      const a = x + G / 2, b = y + G / 2, w = L - G;
+      g.save(); g.beginPath(); g.rect(a, b, w, w); g.clip();
+      g.fillStyle = `hsl(${37 + rnd() * 3}, ${15 + rnd() * 4}%, ${73 + rnd() * 3}%)`;
+      g.fillRect(a, b, w, w);
+      for (let k = 0; k < 70; k++) {                                          // faint cross weave
+        g.fillStyle = `rgba(120,106,88,${0.03 + rnd() * 0.05})`;
+        g.fillRect(a + rnd() * w, b, 1 + rnd() * 2, w);
+      }
+      for (let k = 0; k < 420; k++) {                                         // linen / bamboo fibres along x
+        const dark = rnd() < 0.6, len = 15 + rnd() * 230;
+        g.fillStyle = dark ? `rgba(112,98,80,${0.05 + rnd() * 0.13})` : `rgba(240,234,224,${0.06 + rnd() * 0.16})`;
+        g.fillRect(a + rnd() * w - 40, b + rnd() * w, len, rnd() < 0.8 ? 1 : 2);
+      }
+      for (let k = 0; k < 26; k++) {                                          // short dark dashes
+        g.fillStyle = `rgba(86,72,56,${0.22 + rnd() * 0.25})`;
+        g.fillRect(a + rnd() * w, b + rnd() * w, 6 + rnd() * 30, 2);
+      }
+      g.restore();
+      g.strokeStyle = 'rgba(92,80,64,.5)'; g.lineWidth = 1.5; g.strokeRect(a + 0.75, b + 0.75, w - 1.5, w - 1.5);
+    }
+    function insert(x, y) {
+      const a = x + G / 2, b = y + G / 2, w = S - G, cx = a + w / 2, cy = b + w / 2, F = 5;
+      g.fillStyle = '#9f9584'; g.fillRect(a, b, w, w);                        // light frame with a dotted band
+      g.fillStyle = 'rgba(80,70,60,.45)';
+      for (let k = 2; k < w - 2; k += 3) [[a + k, b + 2.5], [a + k, b + w - 2.5], [a + 2.5, b + k], [a + w - 2.5, b + k]].forEach(([px, py]) => g.fillRect(px - 0.6, py - 0.6, 1.2, 1.2));
+      g.fillStyle = '#564b43'; g.fillRect(a + F, b + F, w - 2 * F, w - 2 * F);   // dark bronze field
+      g.save(); g.beginPath(); g.rect(a + F, b + F, w - 2 * F, w - 2 * F); g.clip();
+      g.strokeStyle = '#a99f92'; g.fillStyle = '#a99f92'; g.lineCap = 'round';
+      g.lineWidth = 2.2; g.beginPath(); g.arc(cx, cy, w * 0.3, 0, Math.PI * 2); g.stroke();         // ring
+      g.lineWidth = 1;   g.beginPath(); g.arc(cx, cy, w * 0.26, 0, Math.PI * 2); g.stroke();
+      for (let q = 0; q < 4; q++) {                                           // four curved blades through the ring
+        g.save(); g.translate(cx, cy); g.rotate(q * Math.PI / 2);
+        g.lineWidth = 2.4; g.beginPath(); g.moveTo(2, -6); g.quadraticCurveTo(w * 0.34, -w * 0.12, w * 0.4, -w * 0.38); g.stroke();
+        g.lineWidth = 1; g.beginPath(); g.arc(w * 0.33, -w * 0.33, 3, 0, Math.PI * 1.5); g.stroke();   // corner scroll
+        g.restore();
+      }
+      for (let k = 0; k < 12; k++) {                                          // rosette
+        const t = k * Math.PI / 6; g.lineWidth = 1.2;
+        g.beginPath(); g.moveTo(cx + Math.cos(t) * 5, cy + Math.sin(t) * 5); g.lineTo(cx + Math.cos(t) * 11, cy + Math.sin(t) * 11); g.stroke();
+      }
+      g.beginPath(); g.arc(cx, cy, 3.6, 0, Math.PI * 2); g.fill();
+      g.restore();
+      g.strokeStyle = 'rgba(60,52,44,.5)'; g.lineWidth = 1; g.strokeRect(a + 0.5, b + 0.5, w - 1, w - 1);
+    }
+    for (let i = -8; i <= 12; i++) for (let j = -8; j <= 12; j++) {
+      const x = i * L - j * S, y = i * S + j * L;
+      if (x > P || y > P || x + L + S < 0 || y + L + S < 0) continue;
+      const key = ((i % 5) + 5) % 5 * 7 + ((j % 5) + 5) % 5;                 // the pattern repeats every 5 lattice steps: same tile, same grain
+      tile(x, y, rng(key + 1));
+      insert(x + L - S, y + L);
+    }
+    const tx = new THREE.CanvasTexture(c);
+    tx.wrapS = tx.wrapT = THREE.RepeatWrapping;
+    tx.repeat.set(1 / M(P), 1 / M(P));
+    tx.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    return tx;
+  }
   const PLAN = [[0, 0], [RX, 0], [RX, RZ], [0, RZ]];
   const floorShape = new THREE.Shape(PLAN.map(([x, z]) => new THREE.Vector2(M(x), -M(z))));
   const floorGeo = new THREE.ShapeGeometry(floorShape);
   floorGeo.rotateX(-Math.PI / 2);
-  const floor = new THREE.Mesh(floorGeo, new THREE.MeshStandardMaterial({ color: 0xcfc7bb, roughness: 0.85 }));
+  const floor = new THREE.Mesh(floorGeo, new THREE.MeshStandardMaterial({ map: pinwheelTexture(), roughness: 0.6 }));
   floor.receiveShadow = true;
   scene.add(floor);
   boxMM(-900, 5400, -80, -2, -1200, 5000, baseMat, scene, false);
@@ -628,8 +703,8 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
     requestAnimationFrame(loop);
   }
 
-  // deep link: #plan, #door, #window, #wwest, #wnorth, #weast, #wsouth opens that view; add ",open" to open the doors
-  const [hashView, hashOpen] = location.hash.slice(1).split(',');
+  // deep link: #plan, #door, #window, #wwest, #wnorth, #weast, #wsouth opens that view; add ",open" to open the doors, ",clean" to hide labels
+  const [hashView, ...hashOpts] = location.hash.slice(1).split(',');
   applyTheme();
   persp.position.set(...VIEWS.orbit.pos);
   persp.fov = VIEWS.orbit.fov;
@@ -638,7 +713,8 @@ h2{margin:26px 0 6px;font:600 11px/1.4 var(--f-body);letter-spacing:.08em;text-t
   window.addEventListener('resize', resize);
   resize();
   if (hashView === 'plan' || VIEWS[hashView]) setView(hashView, true);
-  if (hashOpen === 'open') { openKind.door = true; hinges.forEach(h => { h.pivot.rotation.y = h.angle; }); document.getElementById('t-door-open').setAttribute('aria-pressed', 'true'); }
+  if (hashOpts.includes('clean') && !cleanView) cleanBtn.click();
+  if (hashOpts.includes('open')) { openKind.door = true; hinges.forEach(h => { h.pivot.rotation.y = h.angle; }); document.getElementById('t-door-open').setAttribute('aria-pressed', 'true'); }
   requestAnimationFrame(loop);
 })();
 </script>
